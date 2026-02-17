@@ -58,8 +58,6 @@ def test_check_term_let_duplicate_binders():
     with pytest.raises(ValueError):
         check_term(term, context)
 
-
-@pytest.mark.skip
 def test_check_term_letrec():
     term = LetRec(
         bindings=[
@@ -73,7 +71,6 @@ def test_check_term_letrec():
     check_term(term, context)
 
 
-@pytest.mark.skip
 def test_check_term_letrec_scope():
     term = LetRec(
         bindings=[
@@ -88,7 +85,6 @@ def test_check_term_letrec_scope():
     check_term(term, context)
 
 
-@pytest.mark.skip
 def test_check_term_letrec_duplicate_binders():
     term = LetRec(
         bindings=[
