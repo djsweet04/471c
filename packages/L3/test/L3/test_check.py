@@ -17,7 +17,6 @@ from L3.syntax import (
 )
 
 
-@pytest.mark.skip
 def test_check_term_let():
     term = Let(
         bindings=[
@@ -30,8 +29,6 @@ def test_check_term_let():
 
     check_term(term, context)
 
-
-@pytest.mark.skip
 def test_check_term_let_scope():
     term = Let(
         bindings=[
@@ -47,7 +44,6 @@ def test_check_term_let_scope():
         check_term(term, context)
 
 
-@pytest.mark.skip
 def test_check_term_let_duplicate_binders():
     term = Let(
         bindings=[
