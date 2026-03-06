@@ -186,6 +186,7 @@ def test_branch():
 
     assert actual == expected
 
+
 def test_allocate():
     term = L3.Allocate(count=5)
     context: Context = {}

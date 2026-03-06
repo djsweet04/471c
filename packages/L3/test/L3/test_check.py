@@ -156,6 +156,7 @@ def test_check_term_apply():
 
     check_term(term, context)
 
+
 def test_apply_multiple_arguments():
     term = Apply(
         target=Reference(name="f"),
@@ -171,6 +172,7 @@ def test_apply_multiple_arguments():
     }
 
     check_term(term, context)
+
 
 def test_check_term_immediate():
     term = Immediate(value=0)
@@ -251,6 +253,7 @@ def test_check_term_begin():
 
     check_term(term, context)
 
+
 def test_begin_muktiple_effects():
     term = Begin(
         effects=[
@@ -264,6 +267,7 @@ def test_begin_muktiple_effects():
     context: Context = {}
 
     check_term(term, context)
+
 
 def test_check_program():
     program = Program(

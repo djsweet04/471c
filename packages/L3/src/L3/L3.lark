@@ -1,18 +1,21 @@
+%import common.WS_INLINE
+%ignore WS_INLINE
+
 program     : "(" PROGRAM "(" parameters ")" term ")"
 parameters  : IDENTIFIER*
 
 term        : let
             | letrec
-            | reference
             | abstract
-            | apply
-            | immediate
-            | primitive
-            | branch
             | allocate
             | load
             | store
             | begin
+            | primitive
+            | branch
+            | apply
+            | immediate
+            | reference
 
 
 let         : "(" LET "(" bindings ")" term ")"
@@ -20,11 +23,41 @@ let         : "(" LET "(" bindings ")" term ")"
 letrec      : "(" LETREC "(" bindings ")" term ")"
 
 bindings    : binding*
-binding     : IDENTIFIER term
+binding     : "(" IDENTIFIER term ")"
 
-PROGRAM.2   : "l3"
-LET.2       : "let"
-LETREC.2    : "letrec"
-LAMBDA.2    : "\\" | "lambda" | "λ"
+PROGRAM   : "l3"
+LET       : "let"
+LETREC    : "letrec"
+LAMBDA    : "\\" | "lambda" | "λ"
 
 IDENTIFIER  : /[a-zA-Z_][a-zA-Z0-9_]*/
+
+immediate   : INT
+INT         : /-?\d+/
+
+
+
+reference   : IDENTIFIER 
+
+abstract    : "(" LAMBDA "(" parameters ")" term ")"
+
+apply       : "(" term term* ")"
+
+primitive   : "(" PRIMITIVE term term ")"
+PRIMITIVE   : "+" | "-" | "*"
+
+branch      : "(" IF "(" BRANCH term term ")" term term ")"
+BRANCH      : "<" | "=="
+IF          : "if"
+
+allocate    : "(" ALLOCATE term ")"
+ALLOCATE    : "allocate"
+
+load        : "(" LOAD term term")"
+LOAD        : "load"
+
+store       : "(" STORE term term term ")"
+STORE       : "store"
+
+begin       : "(" BEGIN term+ ")"
+BEGIN       : "begin"
