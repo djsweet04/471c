@@ -2,13 +2,11 @@ from .syntax import Program, Term, Reference, Let, Immediate, Abstract, Apply, P
 
 
 def constant_fold(program: Program) -> Program:
-    """Evaluate constant expressions at compile time."""
     body = _fold_term(program.body)
     return program.model_copy(update={"body": body})
 
 
 def _fold_term(term: Term) -> Term:
-    """Recursively fold constants in a term."""
     match term:
         case Primitive(operator=op, left=left, right=right):
             left_folded = _fold_term(left)
@@ -65,7 +63,6 @@ def _fold_term(term: Term) -> Term:
 
 
 def _evaluate_primitive(operator: str, left: int, right: int) -> int:
-    """Evaluate a primitive operation on constants."""
     match operator:
         case "+":
             return left + right

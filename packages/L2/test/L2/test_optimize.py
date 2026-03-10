@@ -20,44 +20,34 @@ from L2.syntax import (
 )
 
 # =============================================================================
-# constant_fold (fold.py) — minimal for branch coverage
+# constant fold
 # =============================================================================
 
 def test_fold_constant_and_nonconstant_paths_and_term_walk():
-    """
-    Covers:
-    - Primitive: constant-fold happens (if-true)
-    - Primitive: no fold when non-constant (if-false)
-    - All term-shape cases: Let, Abstract, Apply, Branch, Load, Store, Begin,
-      plus Reference/Immediate/Allocate passthrough.
-    """
     program = Program(
         parameters=[],
         body=Let(
             bindings=[
-                ("ptr", Allocate(count=1)),  # Allocate passthrough case
-                ("nc", Primitive(operator="+", left=Reference(name="x"), right=Immediate(value=1))),  # non-constant primitive
+                ("ptr", Allocate(count=1)),
+                ("nc", Primitive(operator="+", left=Reference(name="x"), right=Immediate(value=1))),
             ],
             body=Begin(
                 effects=[
-                    # Store folds base and value (constant primitive inside)
                     Store(
                         base=Primitive(operator="+", left=Immediate(value=10), right=Immediate(value=5)),
                         index=0,
                         value=Primitive(operator="*", left=Immediate(value=2), right=Immediate(value=3)),
                     ),
-                    # Apply with empty args (0-iteration args loop)
                     Apply(target=Reference(name="f"), arguments=[]),
                 ],
                 value=Branch(
                     operator="<",
-                    left=Primitive(operator="+", left=Immediate(value=1), right=Immediate(value=1)),  # constant primitive
+                    left=Primitive(operator="+", left=Immediate(value=1), right=Immediate(value=1)),
                     right=Immediate(value=5),
                     consequent=Apply(
                         target=Reference(name="f"),
                         arguments=[Primitive(operator="+", left=Immediate(value=1), right=Immediate(value=1))],
                     ),
-                    # Begin with empty effects (0-iteration effects loop) + Load case
                     otherwise=Begin(
                         effects=[],
                         value=Load(
@@ -74,14 +64,12 @@ def test_fold_constant_and_nonconstant_paths_and_term_walk():
     let = result.body
     assert isinstance(let, Let)
 
-    # Non-constant primitive should remain a Primitive (not folded)
     _, nc_val = let.bindings[1]
     assert isinstance(nc_val, Primitive)
 
     begin = let.body
     assert isinstance(begin, Begin)
 
-    # Verify deep folds happened
     store = begin.effects[0]
     assert store.base == Immediate(value=15)
     assert store.value == Immediate(value=6)
@@ -111,10 +99,6 @@ def test_fold_begin_multiple_effects():
     assert begin.effects[1] == Immediate(value=4)
 
 def test_fold_unknown_operator_branch():
-    """
-    Covers the 'case _' branch in _evaluate_primitive without constructing
-    an invalid Primitive node.
-    """
     with pytest.raises(ValueError):
         _evaluate_primitive("/", 1, 2)
 
@@ -155,18 +139,10 @@ def test_fold_begin_with_no_effects():
 
 
 # =============================================================================
-# constant_propagate (constprop.py) — minimal for branch coverage
+# constant propagation
 # =============================================================================
 
 def test_constprop_reference_branches_and_loops_and_abstract_boundary():
-    """
-    Covers:
-    - Reference: in constants (true) and not in constants (false)
-    - Let binding: immediate vs non-immediate (if true/false)
-    - Apply args empty vs non-empty
-    - Begin effects empty vs non-empty
-    - Abstract resets propagation environment
-    """
     program = Program(
         parameters=[],
         body=Let(
@@ -194,10 +170,8 @@ def test_constprop_reference_branches_and_loops_and_abstract_boundary():
     branch = let.body
     assert isinstance(branch, Branch)
 
-    # a propagated in normal scope
     assert branch.left.left == Immediate(value=10)
 
-    # a NOT propagated inside Abstract
     abs_term = branch.otherwise.value
     assert isinstance(abs_term, Abstract)
     assert isinstance(abs_term.body, Reference)
@@ -227,14 +201,12 @@ def test_constprop_top_level_immediate_and_allocate_passthrough():
 
 
 def test_constprop_shadowing_removes_prior_constant():
-    # Outer: x is a constant
-    # Inner: x is rebound to a non-immediate -> should shadow and remove constant knowledge
     program = Program(
         parameters=[],
         body=Let(
             bindings=[("x", Immediate(value=1))],
             body=Let(
-                bindings=[("x", Reference(name="y"))],  # non-immediate shadows x
+                bindings=[("x", Reference(name="y"))],
                 body=Reference(name="x"),
             ),
         ),
@@ -248,7 +220,6 @@ def test_constprop_shadowing_removes_prior_constant():
     inner = outer.body
     assert isinstance(inner, Let)
 
-    # Inner x should NOT become Immediate(1)
     assert inner.body == Reference(name="x")
 
 
@@ -280,14 +251,48 @@ def test_constprop_begin_with_no_effects():
     assert result.body.effects == []
 
 
+def test_constprop_store_load_and_apply_nonempty():
+    program = Program(
+        parameters=[],
+        body=Let(
+            bindings=[
+                ("ptr", Immediate(value=100)),
+                ("v", Immediate(value=42)),
+            ],
+            body=Begin(
+                effects=[
+                    Store(base=Reference(name="ptr"), index=0, value=Reference(name="v")),
+                    Apply(target=Reference(name="f"), arguments=[Reference(name="v")]),
+                ],
+                value=Load(base=Reference(name="ptr"), index=0),
+            ),
+        ),
+    )
+
+    result = constant_propagate(program)
+    let = result.body
+    assert isinstance(let, Let)
+
+    begin = let.body
+    assert isinstance(begin, Begin)
+
+    store = begin.effects[0]
+    assert store.base == Immediate(value=100)
+    assert store.value == Immediate(value=42)
+
+    app = begin.effects[1]
+    assert app.arguments[0] == Immediate(value=42)
+
+    load = begin.value
+    assert load.base == Immediate(value=100)
+
+
+
 # =============================================================================
-# eliminate_dead_code (deadcode.py) — minimal for branch coverage
+# dead code elimination
 # =============================================================================
 
 def test_deadcode_drops_all_bindings_when_unused():
-    """
-    Covers the Let path where 'if not new_bindings' is True.
-    """
     program = Program(
         parameters=[],
         body=Let(bindings=[("x", Immediate(value=1))], body=Immediate(value=2)),
@@ -297,37 +302,28 @@ def test_deadcode_drops_all_bindings_when_unused():
 
 
 def test_deadcode_traverses_all_free_vars_cases_and_transitive_needed_vars():
-    """
-    Forces _free_vars() to visit:
-    Reference, Let (empty bindings), Abstract, Apply (empty & non-empty args),
-    Primitive, Branch, Load, Store, Begin (empty & non-empty effects),
-    Immediate, Allocate.
-
-    Also forces _compute_needed_vars() to add a needed var transitively:
-    y is needed, and y depends on a (but a is not referenced directly in the body).
-    """
     program = Program(
         parameters=[],
         body=Let(
             bindings=[
-                ("a", Immediate(value=1)),                 # not referenced directly by body
-                ("y", Reference(name="a")),                # referenced by body -> makes 'a' needed transitively
-                ("ptr", Allocate(count=1)),                # referenced by body
-                ("fun", Abstract(                          # referenced by body
+                ("a", Immediate(value=1)),                 
+                ("y", Reference(name="a")),                
+                ("ptr", Allocate(count=1)),            
+                ("fun", Abstract(                      
                     parameters=["z"],
                     body=Primitive(operator="+", left=Reference(name="z"), right=Reference(name="y")),
                 )),
-                ("unused", Immediate(value=99)),           # should be eliminated
+                ("unused", Immediate(value=99)),          
             ],
             body=Begin(
                 effects=[
                     Store(base=Reference(name="ptr"), index=0, value=Reference(name="y")),
-                    Apply(target=Reference(name="fun"), arguments=[]),                # empty args
-                    Apply(target=Reference(name="fun"), arguments=[Reference(name="y")]),  # non-empty args
-                    Let(bindings=[], body=Reference(name="y")),                       # Let (empty bindings)
-                    Let(bindings=[("t", Reference(name="y"))], body=Reference(name="t")),  # Let (non-empty bindings)
-                    Abstract(parameters=["p"], body=Reference(name="y")),              # Abstract
-                    Begin(effects=[], value=Immediate(value=0)),                      # Begin empty effects
+                    Apply(target=Reference(name="fun"), arguments=[]),               
+                    Apply(target=Reference(name="fun"), arguments=[Reference(name="y")]),  
+                    Let(bindings=[], body=Reference(name="y")),                       
+                    Let(bindings=[("t", Reference(name="y"))], body=Reference(name="t")),  
+                    Abstract(parameters=["p"], body=Reference(name="y")),           
+                    Begin(effects=[], value=Immediate(value=0)),                 
                 ],
                 value=Branch(
                     operator="<",
@@ -345,7 +341,6 @@ def test_deadcode_traverses_all_free_vars_cases_and_transitive_needed_vars():
 
     kept = [v for v, _ in result.body.bindings]
     assert "unused" not in kept
-    # Must keep these because body references them (and 'a' is needed transitively via y)
     assert set(["a", "y", "ptr", "fun"]).issubset(set(kept))
 
 def test_deadcode_free_vars_multiple_bindings():
@@ -386,7 +381,6 @@ def test_deadcode_top_level_nonlet_terms(term, expected_type):
     assert isinstance(result.body, expected_type)
 
 def test_deadcode_compute_needed_vars_multiple_iterations():
-    # a -> b -> c chain forces multiple while-loop iterations
     program = Program(
         parameters=[],
         body=Let(
@@ -413,7 +407,7 @@ def test_deadcode_free_vars_empty_bindings():
 
 
 def test_deadcode_compute_needed_vars_no_iteration():
-    # No bindings are needed → while loop exits immediately
+
     program = Program(
         parameters=[],
         body=Let(
@@ -424,9 +418,21 @@ def test_deadcode_compute_needed_vars_no_iteration():
     result = eliminate_dead_code(program)
     assert result.body == Immediate(value=0)
 
+def test_deadcode_needed_immediate_does_not_expand_dependencies():
+    program = Program(
+        parameters=[],
+        body=Let(
+            bindings=[("k", Immediate(value=0))],
+            body=Reference(name="k"),
+        ),
+    )
+    result = eliminate_dead_code(program)
+    assert isinstance(result.body, Let)
+    assert result.body.bindings[0][0] == "k"
+
 
 # =============================================================================
-# optimize_program (optimize.py) — minimal loop coverage
+# optimize program 
 # =============================================================================
 
 def test_optimize_breaks_when_no_change():
@@ -449,53 +455,4 @@ def test_optimize_converges_after_changes():
 def test_fold_minus_branch():
     assert _evaluate_primitive("-", 10, 3) == 7
 
-
-
-def test_constprop_store_load_and_apply_nonempty():
-    program = Program(
-        parameters=[],
-        body=Let(
-            bindings=[
-                ("ptr", Immediate(value=100)),
-                ("v", Immediate(value=42)),
-            ],
-            body=Begin(
-                effects=[
-                    Store(base=Reference(name="ptr"), index=0, value=Reference(name="v")),
-                    Apply(target=Reference(name="f"), arguments=[Reference(name="v")]),
-                ],
-                value=Load(base=Reference(name="ptr"), index=0),
-            ),
-        ),
-    )
-
-    result = constant_propagate(program)
-    let = result.body
-    assert isinstance(let, Let)
-
-    begin = let.body
-    assert isinstance(begin, Begin)
-
-    store = begin.effects[0]
-    assert store.base == Immediate(value=100)
-    assert store.value == Immediate(value=42)
-
-    app = begin.effects[1]
-    assert app.arguments[0] == Immediate(value=42)
-
-    load = begin.value
-    assert load.base == Immediate(value=100)
-
-
-def test_deadcode_needed_immediate_does_not_expand_dependencies():
-    program = Program(
-        parameters=[],
-        body=Let(
-            bindings=[("k", Immediate(value=0))],
-            body=Reference(name="k"),
-        ),
-    )
-    result = eliminate_dead_code(program)
-    assert isinstance(result.body, Let)
-    assert result.body.bindings[0][0] == "k"
 

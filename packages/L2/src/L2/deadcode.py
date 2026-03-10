@@ -4,12 +4,10 @@ from .syntax import (
 )
 
 def eliminate_dead_code(program: Program) -> Program:
-    """Remove bindings of unused variables."""
     body = _eliminate_dead(program.body, set())
     return program.model_copy(update={"body": body})
 
 def _free_vars(term: Term) -> set[str]:
-    """Collect all free variable references in a term."""
     match term:
         case Reference(name=name):
             return {name}
@@ -61,7 +59,6 @@ def _free_vars(term: Term) -> set[str]:
             return set()
 
 def _eliminate_dead(term: Term, live_vars: set[str]) -> Term:
-    """Remove dead code from a term."""
     match term:
         case Let(bindings=bindings, body=body):
             needed_vars = _compute_needed_vars(bindings, _free_vars(body))
@@ -122,7 +119,6 @@ def _compute_needed_vars(
     bindings: list[tuple[str, Term]],
     initially_needed: set[str]
 ) -> set[str]:
-    """Compute needed variables, including transitive dependencies."""
     needed = set(initially_needed)
     changed = True
 

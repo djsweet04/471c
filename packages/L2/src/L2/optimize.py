@@ -5,7 +5,6 @@ from .fold import constant_fold
 
 
 def optimize_program(program: Program) -> Program:
-    """Optimize a program by repeatedly applying optimization passes until convergence."""
     while True:
         optimized = program
         optimized = constant_fold(optimized)

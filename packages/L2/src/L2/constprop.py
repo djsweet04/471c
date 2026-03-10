@@ -4,12 +4,10 @@ from .syntax import (
 )
 
 def constant_propagate(program: Program) -> Program:
-    """Replace variable references with constant values when possible."""
     body = _propagate_term(program.body, {})
     return program.model_copy(update={"body": body})
 
 def _propagate_term(term: Term, constants: dict[str, int]) -> Term:
-    """Recursively propagate constants through a term."""
     match term:
         case Reference(name=name):
             if name in constants:
@@ -24,23 +22,19 @@ def _propagate_term(term: Term, constants: dict[str, int]) -> Term:
                 propagated_value = _propagate_term(value_term, new_constants)
                 new_bindings.append((var, propagated_value))
 
-                # Track constants only when binding value is immediate
                 if isinstance(propagated_value, Immediate):
                     new_constants[var] = propagated_value.value
                 else:
-                    # Binding shadows any previous constant knowledge
                     new_constants.pop(var, None)
 
             propagated_body = _propagate_term(body, new_constants)
 
-            # If there are no bindings at all, just return the body
             if not new_bindings:
                 return propagated_body
 
             return Let(bindings=new_bindings, body=propagated_body)
 
         case Abstract(parameters=params, body=body):
-            # Don't propagate across function boundaries
             return Abstract(parameters=params, body=_propagate_term(body, {}))
 
         case Apply(target=target, arguments=args):
