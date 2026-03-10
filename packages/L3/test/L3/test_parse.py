@@ -300,10 +300,11 @@ def test_parse_program_identity():
 
     assert actual == expected
 
+
 def test_parse_allocate_non_immediate():
     """Test that allocate with non-immediate count raises VisitError"""
     source = "(allocate x)"
-    
+
     with pytest.raises(VisitError, match="Allocate count must be an immediate value"):
         parse_term(source)
 
@@ -311,7 +312,7 @@ def test_parse_allocate_non_immediate():
 def test_parse_load_non_immediate_index():
     """Test that load with non-immediate index raises VisitError"""
     source = "(load x y)"
-    
+
     with pytest.raises(VisitError, match="Load index must be an immediate value"):
         parse_term(source)
 
@@ -319,7 +320,7 @@ def test_parse_load_non_immediate_index():
 def test_parse_store_non_immediate_index():
     """Test that store with non-immediate index raises VisitError"""
     source = "(store x y z)"
-    
+
     with pytest.raises(VisitError, match="Store index must be an immediate value"):
         parse_term(source)
 
@@ -327,6 +328,6 @@ def test_parse_store_non_immediate_index():
 def test_transformer_begin_empty_terms():
     """Test that the begin transformer raises ValueError with empty terms"""
     transformer = AstTransformer()
-    
+
     with pytest.raises(ValueError, match="Begin must have at least one term"):
         transformer.begin(Token("BEGIN", "begin"))

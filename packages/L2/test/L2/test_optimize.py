@@ -23,6 +23,7 @@ from L2.syntax import (
 # constant fold
 # =============================================================================
 
+
 def test_fold_constant_and_nonconstant_paths_and_term_walk():
     program = Program(
         parameters=[],
@@ -98,9 +99,11 @@ def test_fold_begin_multiple_effects():
     assert begin.effects[0] == Immediate(value=2)
     assert begin.effects[1] == Immediate(value=4)
 
+
 def test_fold_unknown_operator_branch():
     with pytest.raises(ValueError):
         _evaluate_primitive("/", 1, 2)
+
 
 def test_fold_abstract_case_is_visited():
     program = Program(
@@ -128,6 +131,7 @@ def test_fold_top_level_passthrough_variants(term):
     result = constant_fold(program)
     assert result.body == term
 
+
 def test_fold_begin_with_no_effects():
     program = Program(
         parameters=[],
@@ -142,13 +146,14 @@ def test_fold_begin_with_no_effects():
 # constant propagation
 # =============================================================================
 
+
 def test_constprop_reference_branches_and_loops_and_abstract_boundary():
     program = Program(
         parameters=[],
         body=Let(
             bindings=[
-                ("a", Immediate(value=10)),          # immediate binding -> tracked
-                ("b", Reference(name="y")),          # non-immediate binding -> not tracked
+                ("a", Immediate(value=10)),  # immediate binding -> tracked
+                ("b", Reference(name="y")),  # non-immediate binding -> not tracked
             ],
             body=Branch(
                 operator="<",
@@ -189,6 +194,7 @@ def test_constprop_empty_let_and_allocate_passthrough():
     assert result.body.effects[0] == Allocate(count=3)
     assert result.body.value == Reference(name="x")
 
+
 def test_constprop_top_level_immediate_and_allocate_passthrough():
     p1 = Program(parameters=[], body=Immediate(value=123))
     r1 = constant_propagate(p1)
@@ -197,7 +203,6 @@ def test_constprop_top_level_immediate_and_allocate_passthrough():
     p2 = Program(parameters=[], body=Allocate(count=2))
     r2 = constant_propagate(p2)
     assert r2.body == Allocate(count=2)
-
 
 
 def test_constprop_shadowing_removes_prior_constant():
@@ -287,10 +292,10 @@ def test_constprop_store_load_and_apply_nonempty():
     assert load.base == Immediate(value=100)
 
 
-
 # =============================================================================
 # dead code elimination
 # =============================================================================
+
 
 def test_deadcode_drops_all_bindings_when_unused():
     program = Program(
@@ -306,24 +311,27 @@ def test_deadcode_traverses_all_free_vars_cases_and_transitive_needed_vars():
         parameters=[],
         body=Let(
             bindings=[
-                ("a", Immediate(value=1)),                 
-                ("y", Reference(name="a")),                
-                ("ptr", Allocate(count=1)),            
-                ("fun", Abstract(                      
-                    parameters=["z"],
-                    body=Primitive(operator="+", left=Reference(name="z"), right=Reference(name="y")),
-                )),
-                ("unused", Immediate(value=99)),          
+                ("a", Immediate(value=1)),
+                ("y", Reference(name="a")),
+                ("ptr", Allocate(count=1)),
+                (
+                    "fun",
+                    Abstract(
+                        parameters=["z"],
+                        body=Primitive(operator="+", left=Reference(name="z"), right=Reference(name="y")),
+                    ),
+                ),
+                ("unused", Immediate(value=99)),
             ],
             body=Begin(
                 effects=[
                     Store(base=Reference(name="ptr"), index=0, value=Reference(name="y")),
-                    Apply(target=Reference(name="fun"), arguments=[]),               
-                    Apply(target=Reference(name="fun"), arguments=[Reference(name="y")]),  
-                    Let(bindings=[], body=Reference(name="y")),                       
-                    Let(bindings=[("t", Reference(name="y"))], body=Reference(name="t")),  
-                    Abstract(parameters=["p"], body=Reference(name="y")),           
-                    Begin(effects=[], value=Immediate(value=0)),                 
+                    Apply(target=Reference(name="fun"), arguments=[]),
+                    Apply(target=Reference(name="fun"), arguments=[Reference(name="y")]),
+                    Let(bindings=[], body=Reference(name="y")),
+                    Let(bindings=[("t", Reference(name="y"))], body=Reference(name="t")),
+                    Abstract(parameters=["p"], body=Reference(name="y")),
+                    Begin(effects=[], value=Immediate(value=0)),
                 ],
                 value=Branch(
                     operator="<",
@@ -342,6 +350,7 @@ def test_deadcode_traverses_all_free_vars_cases_and_transitive_needed_vars():
     kept = [v for v, _ in result.body.bindings]
     assert "unused" not in kept
     assert set(["a", "y", "ptr", "fun"]).issubset(set(kept))
+
 
 def test_deadcode_free_vars_multiple_bindings():
     program = Program(
@@ -367,8 +376,16 @@ def test_deadcode_free_vars_multiple_bindings():
         (Allocate(count=1), Allocate),
         (Apply(target=Reference(name="f"), arguments=[]), Apply),
         (Primitive(operator="+", left=Immediate(value=1), right=Immediate(value=2)), Primitive),
-        (Branch(operator="<", left=Immediate(value=1), right=Immediate(value=2),
-                consequent=Immediate(value=1), otherwise=Immediate(value=0)), Branch),
+        (
+            Branch(
+                operator="<",
+                left=Immediate(value=1),
+                right=Immediate(value=2),
+                consequent=Immediate(value=1),
+                otherwise=Immediate(value=0),
+            ),
+            Branch,
+        ),
         (Load(base=Reference(name="ptr"), index=0), Load),
         (Store(base=Reference(name="ptr"), index=0, value=Immediate(value=42)), Store),
         (Begin(effects=[], value=Immediate(value=0)), Begin),
@@ -379,6 +396,7 @@ def test_deadcode_top_level_nonlet_terms(term, expected_type):
     program = Program(parameters=[], body=term)
     result = eliminate_dead_code(program)
     assert isinstance(result.body, expected_type)
+
 
 def test_deadcode_compute_needed_vars_multiple_iterations():
     program = Program(
@@ -397,6 +415,7 @@ def test_deadcode_compute_needed_vars_multiple_iterations():
     kept = [v for v, _ in result.body.bindings]
     assert set(kept) == {"a", "b", "c"}
 
+
 def test_deadcode_free_vars_empty_bindings():
     program = Program(
         parameters=[],
@@ -407,7 +426,6 @@ def test_deadcode_free_vars_empty_bindings():
 
 
 def test_deadcode_compute_needed_vars_no_iteration():
-
     program = Program(
         parameters=[],
         body=Let(
@@ -417,6 +435,7 @@ def test_deadcode_compute_needed_vars_no_iteration():
     )
     result = eliminate_dead_code(program)
     assert result.body == Immediate(value=0)
+
 
 def test_deadcode_needed_immediate_does_not_expand_dependencies():
     program = Program(
@@ -432,8 +451,9 @@ def test_deadcode_needed_immediate_does_not_expand_dependencies():
 
 
 # =============================================================================
-# optimize program 
+# optimize program
 # =============================================================================
+
 
 def test_optimize_breaks_when_no_change():
     program = Program(parameters=[], body=Immediate(value=42))
@@ -451,8 +471,6 @@ def test_optimize_converges_after_changes():
     result = optimize_program(program)
     assert result.body == Immediate(value=2)
 
-    
+
 def test_fold_minus_branch():
     assert _evaluate_primitive("-", 10, 3) == 7
-
-

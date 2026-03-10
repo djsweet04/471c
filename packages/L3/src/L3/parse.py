@@ -86,21 +86,21 @@ class AstTransformer(Transformer[Token, Program | Term]):
         value: Term,
     ) -> tuple[Identifier, Term]:
         return name.value, value
-    
+
     @v_args(inline=True)
     def reference(
         self,
         name: Token,
     ) -> Term:
         return Reference(name=name.value)
-    
+
     @v_args(inline=True)
     def immediate(
         self,
         value: Token,
     ) -> Term:
         return Immediate(value=int(value.value))
-    
+
     @v_args(inline=True)
     def abstract(
         self,
@@ -112,7 +112,7 @@ class AstTransformer(Transformer[Token, Program | Term]):
             parameters=parameters,
             body=body,
         )
-    
+
     @v_args(inline=True)
     def apply(
         self,
@@ -123,7 +123,7 @@ class AstTransformer(Transformer[Token, Program | Term]):
             target=target,
             arguments=list(arguments),
         )
-    
+
     @v_args(inline=True)
     def primitive(
         self,
@@ -136,7 +136,7 @@ class AstTransformer(Transformer[Token, Program | Term]):
             left=left,
             right=right,
         )
-    
+
     @v_args(inline=True)
     def branch(
         self,
@@ -154,7 +154,7 @@ class AstTransformer(Transformer[Token, Program | Term]):
             consequent=consequent,
             otherwise=otherwise,
         )
-    
+
     @v_args(inline=True)
     def allocate(
         self,
@@ -165,7 +165,7 @@ class AstTransformer(Transformer[Token, Program | Term]):
             return Allocate(count=count.value)
         else:
             raise ValueError(f"Allocate count must be an immediate value, got {count}")
-    
+
     @v_args(inline=True)
     def load(
         self,
@@ -177,7 +177,7 @@ class AstTransformer(Transformer[Token, Program | Term]):
             return Load(base=base, index=index.value)
         else:
             raise ValueError(f"Load index must be an immediate value, got {index}")
-    
+
     @v_args(inline=True)
     def store(
         self,
@@ -190,7 +190,7 @@ class AstTransformer(Transformer[Token, Program | Term]):
             return Store(base=base, index=index.value, value=value)
         else:
             raise ValueError(f"Store index must be an immediate value, got {index}")
-    
+
     @v_args(inline=True)
     def begin(
         self,

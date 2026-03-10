@@ -10,11 +10,11 @@ def optimize_program(program: Program) -> Program:
         optimized = constant_fold(optimized)
         optimized = constant_propagate(optimized)
         optimized = eliminate_dead_code(optimized)
-        
+
         # If no changes were made, we've reached a fixed point
         if optimized == program:
             break
-        
+
         program = optimized
-    
+
     return program

@@ -1,11 +1,24 @@
 from .syntax import (
-    Program, Term, Reference, Let, Immediate, Abstract, Apply,
-    Primitive, Branch, Allocate, Load, Store, Begin
+    Program,
+    Term,
+    Reference,
+    Let,
+    Immediate,
+    Abstract,
+    Apply,
+    Primitive,
+    Branch,
+    Allocate,
+    Load,
+    Store,
+    Begin,
 )
+
 
 def constant_propagate(program: Program) -> Program:
     body = _propagate_term(program.body, {})
     return program.model_copy(update={"body": body})
+
 
 def _propagate_term(term: Term, constants: dict[str, int]) -> Term:
     match term:
@@ -71,9 +84,9 @@ def _propagate_term(term: Term, constants: dict[str, int]) -> Term:
 
         case Begin(effects=effects, value=value):
             return Begin(
-                effects=[_propagate_term(eff, constants) for eff in effects],   #pragma no cover
+                effects=[_propagate_term(eff, constants) for eff in effects],  # pragma no cover
                 value=_propagate_term(value, constants),
             )
 
-        case Immediate() | Allocate():  #pragma no cover
+        case Immediate() | Allocate():  # pragma no cover
             return term

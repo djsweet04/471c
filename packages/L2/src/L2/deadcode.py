@@ -1,11 +1,24 @@
 from .syntax import (
-    Program, Term, Reference, Let, Immediate, Abstract, Apply,
-    Primitive, Branch, Allocate, Load, Store, Begin
+    Program,
+    Term,
+    Reference,
+    Let,
+    Immediate,
+    Abstract,
+    Apply,
+    Primitive,
+    Branch,
+    Allocate,
+    Load,
+    Store,
+    Begin,
 )
+
 
 def eliminate_dead_code(program: Program) -> Program:
     body = _eliminate_dead(program.body, set())
     return program.model_copy(update={"body": body})
+
 
 def _free_vars(term: Term) -> set[str]:
     match term:
@@ -35,12 +48,7 @@ def _free_vars(term: Term) -> set[str]:
             return _free_vars(left) | _free_vars(right)
 
         case Branch(left=left, right=right, consequent=cons, otherwise=otherwise):
-            return (
-                _free_vars(left)
-                | _free_vars(right)
-                | _free_vars(cons)
-                | _free_vars(otherwise)
-            )
+            return _free_vars(left) | _free_vars(right) | _free_vars(cons) | _free_vars(otherwise)
 
         case Load(base=base):
             return _free_vars(base)
@@ -55,8 +63,9 @@ def _free_vars(term: Term) -> set[str]:
             free |= _free_vars(value)
             return free
 
-        case Immediate() | Allocate():  #pragma no cover
+        case Immediate() | Allocate():  # pragma no cover
             return set()
+
 
 def _eliminate_dead(term: Term, live_vars: set[str]) -> Term:
     match term:
@@ -112,17 +121,15 @@ def _eliminate_dead(term: Term, live_vars: set[str]) -> Term:
                 value=_eliminate_dead(value, live_vars),
             )
 
-        case Reference() | Immediate() | Allocate():    #pragma no cover
+        case Reference() | Immediate() | Allocate():  # pragma no cover
             return term
 
-def _compute_needed_vars(
-    bindings: list[tuple[str, Term]],
-    initially_needed: set[str]
-) -> set[str]:
+
+def _compute_needed_vars(bindings: list[tuple[str, Term]], initially_needed: set[str]) -> set[str]:
     needed = set(initially_needed)
     changed = True
 
-    while changed: 
+    while changed:
         changed = False
         for var, value in bindings:
             if var in needed:

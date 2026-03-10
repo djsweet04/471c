@@ -84,6 +84,7 @@ def test_eliminate_letrec_term_abstract():
 
     assert actual == expected
 
+
 def test_eliminate_letrec_term_apply():
     term = L3.Apply(
         target=L3.Reference(name="x"),
